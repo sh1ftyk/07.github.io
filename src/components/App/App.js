@@ -127,6 +127,10 @@ export default class App extends Component {
       minValueNumber = 15
       secValueNumber = 0
     }
+    if (minValueNumber <= 0 && secValueNumber <= 0) {
+      minValueNumber = 15
+      secValueNumber = 0
+    }
     if (secValueNumber > 60) {
       minValueNumber += Math.trunc(secValueNumber / 60)
       secValueNumber -= Math.trunc(secValueNumber / 60) * 60
