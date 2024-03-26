@@ -1,92 +1,115 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
-import { formatDistanceToNow } from 'date-fns'
-import { enGB } from 'date-fns/locale/en-GB'
+import './Task.css'
 
 export default class Task extends Component {
-  constructor() {
-    super()
-    this.state = {
-      editing: false,
-      value: '',
+  state = {
+    min: this.props.minValue,
+    sec: this.props.secValue,
+    isCounting: false,
+  }
+
+  static defaultProps = {
+    description: 'Имя не задано',
+    checked: false,
+    timeAfterCreate: () => {},
+    onEditClick: () => {},
+    onDeletedClick: () => {},
+    onCheckBoxClick: () => {},
+  }
+
+  static propTypes = {
+    checked: PropTypes.bool,
+    onCheckBoxClick: PropTypes.func,
+    description: PropTypes.string,
+    timeAfterCreate: PropTypes.string,
+    onEditClick: PropTypes.func,
+    onDeletedClick: PropTypes.func,
+  }
+
+  componentWillUnmount() {
+    clearInterval(this.counterID)
+  }
+
+  minDecrement = () => {
+    const { min, sec } = this.state
+    this.setState({
+      min: min === 0 ? '00' : min - 1,
+      sec: min === 0 && sec === 0 ? '00' : 59,
+    })
+  }
+
+  secDecrement = () => {
+    const { min, sec, isCounting } = this.state
+    const { onCheckBoxClick } = this.props
+
+    if (min === 0 && sec === 0 && isCounting === true) {
+      onCheckBoxClick()
+      clearInterval(this.counterID)
+      this.setState({
+        isCounting: false,
+      })
+    }
+    if (sec > 0) {
+      this.setState({
+        sec: sec - 1,
+        isCounting: true,
+      })
+    } else {
+      this.minDecrement()
     }
   }
 
-  handleSubmit(event) {
-    const { value } = this.state
-    event.preventDefault()
-    const {
-      editItem,
-      todo: { id },
-    } = this.props
-    editItem(id, value)
-    this.setState({ value: '' })
-    this.setState({ editing: false })
+  handlePause = (event) => {
+    event.stopPropagation()
+    this.setState({ isCounting: false })
+    clearInterval(this.counterID)
+  }
+
+  handleStart = (event) => {
+    event.stopPropagation()
+    this.setState({ isCounting: true })
+    this.counterID = setInterval(() => {
+      this.secDecrement()
+    }, 1000)
   }
 
   render() {
-    const { value, editing } = this.state
-    const { changeCheck, todo, deleteItem } = this.props
-    const { body, id, checked, date } = todo
+    const { onCheckBoxClick, description, timeAfterCreate, onEditClick, onDeletedClick, checked } = this.props
+    const { min, sec, isCounting } = this.state
+    const buttonTimer = !isCounting ? (
+      <button type="button" className="icon icon-play" onClick={this.handleStart} />
+    ) : (
+      <button type="button" className="icon icon-pause" onClick={this.handlePause} />
+    )
+
+    const formatTime = (time) => {
+      console.log(time.toString().length)
+      if (time.toString().length === 1) {
+        return `0${time}`
+      } else {
+        return time
+      }
+    }
     return (
-      <li className={checked ? 'completed' : editing ? 'editing' : null}>
-        <div className="view">
-          <input
-            id={id}
-            className="toggle"
-            type="checkbox"
-            onChange={(event) => changeCheck(id, event.target.checked)}
-            checked={checked}
-          />
-          <label htmlFor={id}>
-            <span className="description">{body}</span>
-            <span className="created">
-              {`created ${formatDistanceToNow(date, {
-                includeSeconds: true,
-                locale: enGB,
-                addSuffix: true,
-              })}`}
+      <div className="view">
+        <input className="toggle" type="checkbox" readOnly onClick={onCheckBoxClick} checked={checked} />
+
+        <div className="label">
+          <span role="presentation" className="title" onClick={onCheckBoxClick}>
+            {description}
+          </span>
+          <span className="description">
+            {buttonTimer}
+            <span className="description__time-value">
+              {formatTime(min)}:{formatTime(sec)}
             </span>
-          </label>
-          <button
-            type="button"
-            onClick={() =>
-              this.setState(({ editing }) => ({
-                editing: !editing,
-                value: todo.body,
-              }))
-            }
-            className="icon icon-edit"
-          />
-          <button type="button" onClick={() => deleteItem(id)} className="icon icon-destroy" />
+          </span>
+          <span className="created">created {timeAfterCreate} ago</span>
         </div>
-        {editing && (
-          <form onSubmit={this.handleSubmit.bind(this)}>
-            <input
-              onChange={(event) => this.setState({ value: event.target.value })}
-              type="text"
-              className="edit"
-              value={value}
-            />
-          </form>
-        )}
-      </li>
+        <button type="button" className="icon icon-edit" onClick={onEditClick} aria-label="log out" />
+        <button type="button" className="icon icon-destroy" onClick={onDeletedClick} aria-label="log out" />
+      </div>
     )
   }
-}
-
-Task.propTypes = {
-  todo: PropTypes.shape({
-    id: PropTypes.number,
-    body: PropTypes.string,
-    checked: PropTypes.bool,
-    date: PropTypes.instanceOf(Date),
-  }),
-  deleteItem: PropTypes.func.isRequired,
-  changeCheck: PropTypes.func.isRequired,
-  editItem: PropTypes.func.isRequired,
-}
-
-Task.defaultProps = {
-  todo: {},
 }

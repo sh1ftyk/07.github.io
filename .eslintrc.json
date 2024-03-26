@@ -15,13 +15,13 @@
       "ecmaFeatures": {
         "jsx": true
       },
-      "ecmaVersion": 12,
+      "ecmaVersion": "latest",
       "sourceType": "module"
     },
     "plugins": ["react", "prettier", "import"],
     "rules": {
       "indent": ["error", 2],
-      "prettier/prettier": ["error", {"semi": false
+      "prettier/prettier": ["error", {"semi": false, "endOfLine": "auto"
     }],
       "linebreak-style": [0, "unix"],
       "quotes": ["error", "single"],
